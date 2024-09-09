@@ -1,4 +1,13 @@
 
+using Meowgic.Repositories;
+using MeowgicAPI.Middlewares;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using Serilog;
+using MeowgicAPI.Extensions;
+using Meowgic.Service.Extension;
+using Meowgic.Repositories.Extension;
+
 namespace MeowgicAPI
 {
     public class Program
@@ -8,11 +17,13 @@ namespace MeowgicAPI
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var configuration = builder.Configuration;
+            builder.Services.AddApiDependencies(configuration)
+                            .AddServicesDependencies(configuration)
+                            .AddRepositoriesDependencies();
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            //Add serilog
+            builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console().ReadFrom.Configuration(ctx.Configuration));
 
             var app = builder.Build();
 
@@ -24,9 +35,11 @@ namespace MeowgicAPI
             }
 
             app.UseHttpsRedirection();
+            app.UseCors("AllowAll");
 
             app.UseAuthorization();
-
+            app.UseAuthentication();
+            app.UseMiddleware<GlobalExceptionMiddleware>();
 
             app.MapControllers();
 
