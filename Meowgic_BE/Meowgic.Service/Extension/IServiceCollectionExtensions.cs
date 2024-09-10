@@ -24,7 +24,7 @@ namespace Meowgic.Service.Extension
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddServicesDependencies(this IServiceCollection services)
+        public static IServiceCollection AddServicesDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddMapsterConfigurations();
             services.AddSingleton(opt => StorageClient.Create());
