@@ -1,0 +1,6 @@
+@MeowgicAPI_HostAddress = http://localhost:5189
+
+GET {{MeowgicAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
