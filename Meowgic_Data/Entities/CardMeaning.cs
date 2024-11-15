@@ -12,9 +12,9 @@ namespace Meowgic.Data.Entities
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [ForeignKey("Category")]
-        public string CategoryId { get; set; }
+        public string CategoryId { get; set; } = null!;
         [ForeignKey("Card")]
-        public string CardId { get; set; }
+        public string CardId { get; set; } = null!;
 
         public string Meaning { get; set; } = null!;
 

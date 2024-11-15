@@ -1,4 +1,5 @@
 ﻿using Meowgic.Business.Interface;
+using Meowgic.Shares.Enum;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -12,33 +13,28 @@ using System.Threading.Tasks;
 
 namespace Meowgic.Business.Services
 {
-    public class TokenService : ITokenService
+    public class TokenService(IConfiguration configuration) : ITokenService
     {
-        private readonly IConfiguration _configuration;
+        private readonly IConfiguration _configuration = configuration;
 
-        public TokenService(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
-
-        public string GenerateAccessToken(string accountId, string role)
+        public string GenerateAccessToken(string accountId, Roles role, string name)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtAuth:Key"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>(){
-                new(ClaimTypes.Role, role),
-                new("aid", accountId.ToString())
+                new(ClaimTypes.Role,role.ToString()),
+                new(ClaimTypes.Name,name),
+                new("aid", accountId)
             };
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["JwtAuth:Issuer"],
                 audience: _configuration["JwtAuth:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.Now.AddHours(1),
                 signingCredentials: credentials
             );
-
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
@@ -48,33 +44,6 @@ namespace Meowgic.Business.Services
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
-        }
-
-        public ClaimsPrincipal GetClaimsPrincipalFromExpiredToken(string expiredAccessToken)
-        {
-            var tokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateAudience = true,
-                ValidateIssuer = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtAuth:Key"]!)),
-                ValidateLifetime = false,
-                ValidAudience = _configuration["JwtAuth:Audience"],
-                ValidIssuer = _configuration["JwtAuth:Issuer"]
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            SecurityToken securityToken;
-            var principal = tokenHandler.ValidateToken(expiredAccessToken, tokenValidationParameters, out securityToken);
-            var jwtSecurityToken = securityToken as JwtSecurityToken;
-
-            if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
-              StringComparison.InvariantCultureIgnoreCase))
-            {
-                throw new SecurityTokenException("Invalid access token");
-            }
-
-            return principal;
         }
     }
 }
